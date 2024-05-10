@@ -27,6 +27,16 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const AvailableFoodDB = client.db('PlateSwap').collection('AvailableFood');
+    const FeaturedFoodsDB = client.db('PlateSwap').collection('FeaturedFoods');
+
+    app.get("/AvailableFood", async (req, res) => {
+        const find = AvailableFoodDB.find({});
+        const result = await find.toArray();
+        result.sort((a, b) => parseInt(b.food_quantity) - parseInt(a.food_quantity));
+        res.send(result)
+    });
+
+
     app.post("/AvailableFood",async(req,res)=>{
         const AvailableFood= req.body;
         const result= await AvailableFoodDB.insertOne(AvailableFood)
