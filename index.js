@@ -45,8 +45,21 @@ async function run() {
       res.send(result)    
   });
 
-  
-
+  //   app.get('/Foods/:email', async (req, res) => {
+  //     const email = req.params.email;
+  //     const quary = { donator_email: email}
+  //     const result = await FoodDB.find(quary).toArray()
+  //     res.send(result)    
+  // });
+    
+  app.get("/allFood/:email", async (req, res) => {
+    const email = req.params.email;
+    console.log(email)
+    const query = { donator_email: email }; 
+    const result = await FoodDB.find(query).toArray();
+    res.send(result);
+  });
+ 
 
     app.post("/Food",async(req,res)=>{
         const AvailableFood= req.body;
@@ -85,7 +98,7 @@ async function run() {
 
 
 
-  app.put("/AvailableFood/:id",async (req, res) => {
+  app.put("/Food/:id",async (req, res) => {
     const id = req.params.id;
     const Food= req.body;
     const filter = { _id: new ObjectId(id) };
