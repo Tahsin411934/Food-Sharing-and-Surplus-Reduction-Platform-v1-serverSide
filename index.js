@@ -26,31 +26,81 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const AvailableFoodDB = client.db('PlateSwap').collection('AvailableFood');
-    const FeaturedFoodsDB = client.db('PlateSwap').collection('FeaturedFoods');
+    const FoodDB = client.db('PlateSwap').collection('AvailableFood');
+    // const MyRequestFoodsDB = client.db('PlateSwap').collection('MyRequestFoods');
+    // const FeaturedFoodsDB = client.db('PlateSwap').collection('FeaturedFoods');
 
-    app.get("/AvailableFood", async (req, res) => {
-        const find = AvailableFoodDB.find({});
+    app.get("/Food", async (req, res) => {
+        const find = FoodDB.find({});
         const result = await find.toArray();
         result.sort((a, b) => parseInt(b.food_quantity) - parseInt(a.food_quantity));
         res.send(result)
     });
-
-
-    app.get('/AvailableFood/:id', async (req, res) => {
+ 
+ 
+    app.get('/Foods/:id', async (req, res) => {
       const id = req.params.id;
       const quary = { _id: new ObjectId(id) }
-      const result = await AvailableFoodDB.findOne(quary)
-      res.send(result)
+      const result = await FoodDB.findOne(quary)
+      res.send(result)    
+  });
+
+  
+
+
+    app.post("/Food",async(req,res)=>{
+        const AvailableFood= req.body;
+        const result= await FoodDB.insertOne(AvailableFood)
+        res.send(result)
+    })
+
+
+
+    app.get('/Food/:status', async (req, res) => {
+      const status = req.params.status;
+      const quary = { Food_Status: status }
+      const result = await FoodDB.find(quary).toArray()
+      result.sort((a, b) => parseInt(b.food_quantity) - parseInt(a.food_quantity));
+      res.send(result)    
   });
 
 
+    // app.post("/MyRequestFoods",async(req,res)=>{
+    //     const RequestedFoodsDB= req.body;
+    //     const result= await MyRequestFoodsDB.insertOne(RequestedFoodsDB)
+    //     res.send(result)
+    // })
 
-    app.post("/AvailableFood",async(req,res)=>{
-        const AvailableFood= req.body;
-        const result= await AvailableFoodDB.insertOne(AvailableFood)
-        res.send(result)
-    })
+
+   
+
+  //   app.delete("/Food/:id", async (req, res) => {
+  //     const id = req.params.id;
+  //     console.log(id)
+  //     const query = { _id: new ObjectId(id) };
+  //     const result = await FoodDB.deleteOne(query);
+  //     res.send(result)
+  // })
+
+
+
+
+  app.put("/AvailableFood/:id",async (req, res) => {
+    const id = req.params.id;
+    const Food= req.body;
+    const filter = { _id: new ObjectId(id) };
+    const options = {upset: true};
+    const updatedFood = {
+      $set: {
+        Food_Status: Food.Food_Status,
+        
+      }
+    }
+    const result = await FoodDB.updateOne(filter,updatedFood,options);
+    res.send(result)
+})
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
