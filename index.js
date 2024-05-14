@@ -1,19 +1,27 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
+const cokieParser = require('cookie-parser')
+require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
 
+
 // MIDDLEWARE
 
-app.use(cors());
+app.use(cors({
+  origin:['http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cokieParser())
+
+ 
 
 
-
-
-const uri = "mongodb+srv://PlateSawp:8hfbRPnE14lnWGiN@cluster0.2vutuar.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2vutuar.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,6 +38,25 @@ async function run() {
     const MyRequestFoodsDB = client.db('PlateSwap').collection('MyRequestFoods');
     // const FeaturedFoodsDB = client.db('PlateSwap').collection('FeaturedFoods');
 
+
+
+    // Auth related api
+
+    app.post("/jwt", async(req,res)=>{
+      const user = req.body;
+      console.log(user)
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+      res
+      .cookie('token', token , {
+        httpOnly:true,
+        secure: false,
+        sameSite: 'none'
+      })
+      .send({success : true})
+    })
+
+ 
+    // service related api  
     app.get("/Food", async (req, res) => {
       const find = FoodDB.find({});
       const result = await find.toArray();
@@ -79,7 +106,7 @@ async function run() {
       res.send(result);
     });
  
-     
+       
 
     app.post("/MyRequestFoods", async (req, res) => {
       const MyRequestFoods = req.body;
@@ -87,7 +114,7 @@ async function run() {
       res.send(result)
     })
 
-
+  
 
 
     app.delete("/Food/:id", async (req, res) => {
@@ -123,6 +150,11 @@ async function run() {
       }
       const result = await FoodDB.updateOne(filter, updatedFood, options);
       res.send(result)
+    })
+
+    app.post('/logout', async(req,res)=>{
+      const user = req.body;
+      res.clearCookie('token', {maxAge: 0 }).send({success:true})
     })
  
 
