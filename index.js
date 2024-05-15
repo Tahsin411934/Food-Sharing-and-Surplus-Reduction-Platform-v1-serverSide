@@ -12,13 +12,16 @@ const port = process.env.PORT || 5000;
 // MIDDLEWARE
 
 app.use(cors({
-  origin:['http://localhost:5173'],
+  origin: ['http://localhost:5173',
+    'https://plateswap-96379.web.app',
+    'https://plateswap-96379.firebaseapp.com',
+    'https://plateswap.netlify.app'],
   credentials: true
 }));
 app.use(express.json());
 app.use(cokieParser())
 
- 
+
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2vutuar.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -32,6 +35,36 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+// middleware
+const logger = (req, res, next) => {
+
+  next()
+}
+
+const VerifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  console.log('middleware : ', token);
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: 'unauthorized access' })
+    }
+    req.user = decoded;
+    next();
+  })
+
+
+}
+
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  secure: process.env.NODE_ENV === "production" ? true : false,
+};
 async function run() {
   try {
     const FoodDB = client.db('PlateSwap').collection('AvailableFood');
@@ -42,20 +75,14 @@ async function run() {
 
     // Auth related api
 
-    app.post("/jwt", async(req,res)=>{
+    app.post("/jwt", async (req, res) => {
       const user = req.body;
-      console.log(user)
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
-      res
-      .cookie('token', token , {
-        httpOnly:true,
-        secure: false,
-        sameSite: 'none'
-      })
-      .send({success : true})
+      console.log('user', user)
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+      res.cookie('token', token, cookieOptions).send({ success: true })
     })
 
- 
+
     // service related api  
     app.get("/Food", async (req, res) => {
       const find = FoodDB.find({});
@@ -66,6 +93,7 @@ async function run() {
 
 
     app.get('/Foods/:id', async (req, res) => {
+
       const id = req.params.id;
       const quary = { _id: new ObjectId(id) }
       const result = await FoodDB.findOne(quary)
@@ -74,9 +102,15 @@ async function run() {
 
 
 
-    app.get("/allFood/:email", async (req, res) => {
+    app.get("/allFood/:email", logger, VerifyToken, async (req, res) => {
       const email = req.params.email;
-      console.log(email)
+      console.log('email from parms allfood', email)
+      console.log(req.cookies)
+      console.log('owner info', req.user)
+      if (req.user.email !== email) {
+        return res.status(403).send({ message: 'forbidden access data' })
+      }
+
       const query = { donator_email: email };
       const result = await FoodDB.find(query).toArray();
       res.send(result);
@@ -99,14 +133,17 @@ async function run() {
       res.send(result)
     })
 
-    app.get("/MyRequestFoods/:email", async (req, res) => {
+    app.get("/MyRequestFoods/:email", logger, VerifyToken, async (req, res) => {
       const email = req.params.email;
-      const query = { user_email : email };
+      const query = { user_email: email };
+      if (req.user.email !== email) {
+        return res.status(403).send({ message: 'forbidden access data' })
+      }
       const result = await MyRequestFoodsDB.find(query).toArray();
       res.send(result);
     });
- 
-       
+
+
 
     app.post("/MyRequestFoods", async (req, res) => {
       const MyRequestFoods = req.body;
@@ -114,12 +151,11 @@ async function run() {
       res.send(result)
     })
 
-  
+
 
 
     app.delete("/Food/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id)
       const query = { _id: new ObjectId(id) };
       const result = await FoodDB.deleteOne(query);
       res.send(result)
@@ -152,13 +188,13 @@ async function run() {
       res.send(result)
     })
 
-    app.post('/logout', async(req,res)=>{
+    app.post('/logout', async (req, res) => {
       const user = req.body;
-      res.clearCookie('token', {maxAge: 0 }).send({success:true})
+      res.clearCookie('token', { ...cookieOptions, maxAge: 0 }).send({ success: true })
     })
- 
 
-    await client.db("admin").command({ ping: 1 });
+
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
