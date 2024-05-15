@@ -36,11 +36,15 @@ const client = new MongoClient(uri, {
 });
 
 
+
+
 // middleware
 const logger = (req, res, next) => {
 
   next()
 }
+
+
 
 const VerifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
@@ -60,11 +64,15 @@ const VerifyToken = (req, res, next) => {
 
 }
 
+
+
 const cookieOptions = {
   httpOnly: true,
   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
   secure: process.env.NODE_ENV === "production" ? true : false,
 };
+
+
 async function run() {
   try {
     const FoodDB = client.db('PlateSwap').collection('AvailableFood');
@@ -83,6 +91,8 @@ async function run() {
     })
 
 
+
+
     // service related api  
     app.get("/Food", async (req, res) => {
       const find = FoodDB.find({});
@@ -92,6 +102,8 @@ async function run() {
     });
 
 
+
+
     app.get('/Foods/:id', async (req, res) => {
 
       const id = req.params.id;
@@ -99,6 +111,7 @@ async function run() {
       const result = await FoodDB.findOne(quary)
       res.send(result)
     });
+
 
 
 
@@ -117,6 +130,8 @@ async function run() {
     });
 
 
+
+
     app.get('/Food/:status', async (req, res) => {
       const status = req.params.status;
       const quary = { Food_Status: status }
@@ -127,11 +142,15 @@ async function run() {
 
 
 
+
+
     app.post("/Food", async (req, res) => {
       const AvailableFood = req.body;
       const result = await FoodDB.insertOne(AvailableFood)
       res.send(result)
     })
+
+
 
     app.get("/MyRequestFoods/:email", logger, VerifyToken, async (req, res) => {
       const email = req.params.email;
@@ -142,6 +161,8 @@ async function run() {
       const result = await MyRequestFoodsDB.find(query).toArray();
       res.send(result);
     });
+
+
 
 
 
@@ -188,6 +209,8 @@ async function run() {
       res.send(result)
     })
 
+
+    
     app.post('/logout', async (req, res) => {
       const user = req.body;
       res.clearCookie('token', { ...cookieOptions, maxAge: 0 }).send({ success: true })
