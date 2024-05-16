@@ -1,8 +1,9 @@
+require('dotenv').config()
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
 const cokieParser = require('cookie-parser')
-require('dotenv').config()
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -12,8 +13,9 @@ const port = process.env.PORT || 5000;
 // MIDDLEWARE
 
 app.use(cors({
-  origin: ['http://localhost:5173',
-    'https://plateswap-96379.web.app',
+  origin: ['https://plateswap-96379.web.app',
+    'http://localhost:5173',
+
     'https://plateswap-96379.firebaseapp.com',
     'https://plateswap.netlify.app'],
   credentials: true
@@ -66,11 +68,9 @@ const VerifyToken = (req, res, next) => {
 
 
 
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  secure: process.env.NODE_ENV === "production" ? true : false,
-};
+// const cookieOptions = {
+
+// };
 
 
 async function run() {
@@ -85,9 +85,12 @@ async function run() {
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
-      console.log('user', user)
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-      res.cookie('token', token, cookieOptions).send({ success: true })
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+      res.cookie('token', token, {
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        secure: process.env.NODE_ENV === "production" ? true : false,
+      }).send({ success: true })
     })
 
 
@@ -115,14 +118,12 @@ async function run() {
 
 
 
-    app.get("/allFood/:email", logger, VerifyToken, async (req, res) => {
+    app.get("/allFood/:email",  async (req, res) => {
       const email = req.params.email;
-      console.log('email from parms allfood', email)
-      console.log(req.cookies)
-      console.log('owner info', req.user)
-      if (req.user.email !== email) {
-        return res.status(403).send({ message: 'forbidden access data' })
-      }
+      
+      // if (req.user.email !== email) {
+      //   return res.status(403).send({ message: 'forbidden access data' })
+      // }
 
       const query = { donator_email: email };
       const result = await FoodDB.find(query).toArray();
@@ -152,12 +153,12 @@ async function run() {
 
 
 
-    app.get("/MyRequestFoods/:email", logger, VerifyToken, async (req, res) => {
+    app.get("/MyRequestFoods/:email", async (req, res) => {
       const email = req.params.email;
       const query = { user_email: email };
-      if (req.user.email !== email) {
-        return res.status(403).send({ message: 'forbidden access data' })
-      }
+      // if (req.user.email !== email) {
+      //   return res.status(403).send({ message: 'forbidden access data' })
+      // }
       const result = await MyRequestFoodsDB.find(query).toArray();
       res.send(result);
     });
@@ -210,10 +211,12 @@ async function run() {
     })
 
 
-    
+
     app.post('/logout', async (req, res) => {
       const user = req.body;
-      res.clearCookie('token', { ...cookieOptions, maxAge: 0 }).send({ success: true })
+      res.clearCookie('token', {  maxAge: 0 ,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        secure: process.env.NODE_ENV === "production" ? true : false,}).send({ success: true })
     })
 
 
