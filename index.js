@@ -118,7 +118,7 @@ async function run() {
 
 
 
-    app.get("/allFood/:email",  async (req, res) => {
+    app.get("/allFood/:email", async (req, res) => {
       const email = req.params.email;
       
       // if (req.user.email !== email) {
