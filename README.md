@@ -3,7 +3,7 @@
 PlateSwap is a server-side platform designed to facilitate food sharing and surplus reduction. It provides robust APIs for users to share surplus food items, make requests for specific items, and manage their interactions securely.
 
 
-## visit : https://plateswap-96379.web.app/ or https://plateswap.netlify.app/
+## visit : https://plateswap-96379.web.app/ or  https://plateswap.netlify.app/
 
 
 ## Introduction
